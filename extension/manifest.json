@@ -1,0 +1,21 @@
+{
+  "manifest_version": 3,
+  "name": "WB Ресейл Ассистент — автозаполнение объявлений",
+  "version": "1.0",
+  "description": "Заполняет форму объявления Wildberries Ресейл данными из локального дашборда: заголовок, описание, цена, размер.",
+  "permissions": ["storage", "activeTab", "scripting", "downloads"],
+  "host_permissions": [
+    "http://127.0.0.1:8000/*",
+    "http://localhost:8000/*",
+    "https://www.wildberries.ru/*",
+    "https://wildberries.ru/*"
+  ],
+  "action": { "default_popup": "popup.html", "default_title": "WB Ресейл Ассистент" },
+  "content_scripts": [
+    {
+      "matches": ["https://www.wildberries.ru/*", "https://wildberries.ru/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

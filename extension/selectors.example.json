@@ -1,0 +1,10 @@
+{
+  "_comment": "Скопируйте в selectors.json и подправьте под актуальную вёрстку формы «Ресейл». Значения — массивы CSS-селекторов, первый найденный используется.",
+  "create_url": "https://www.wildberries.ru/",
+  "title": ["input[name*='name' i]", "input[placeholder*='назван' i]", "input[type='text']"],
+  "description": ["textarea[name*='desc' i]", "textarea[placeholder*='опис' i]", "textarea"],
+  "price": ["input[name*='price' i]", "input[placeholder*='Цена' i]", "input[inputmode='numeric']"],
+  "size": ["input[name*='size' i]", "input[placeholder*='размер' i]"],
+  "condition": ["select[name*='condition' i]", "select[name*='state' i]"],
+  "submit_warning": "Расширение не отправляет форму. Проверьте поля и нажмите «Опубликовать» сами."
+}

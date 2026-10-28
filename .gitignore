@@ -1,0 +1,23 @@
+__pycache__/
+*.py[cod]
+.venv/
+.deps/
+venv/
+.env
+*.log
+data/*.db
+data/*.db-*
+data/out/*
+data/incoming/*
+data/exports/*
+data/market.csv
+!data/.gitkeep
+!data/inventory.example.csv
+!data/market.example.csv
+!data/incoming/README.md
+.DS_Store
+.playwright-profile/
+.pytest_cache/
+
+# One-off Mac setup archive for download
+WB-Resale-Mac.zip

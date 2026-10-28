@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WB Ресейл Ассистент — автоматизация б/у платьев</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">WB</div>
+      <div><b>Ресейл Ассистент</b><span>подготовка 300+ платьев</span></div>
+    </div>
+    <nav id="nav">
+      <button class="nav-item active" data-tab="overview"><i>◫</i><span>Обзор</span></button>
+      <button class="nav-item" data-tab="listings"><i>▤</i><span>Платья</span><em id="nav-count"></em></button>
+      <button class="nav-item" data-tab="content"><i>⬆</i><span>Контент и фото</span></button>
+      <button class="nav-item" data-tab="bumps"><i>⟳</i><span>Поднятие</span><em id="nav-bumps"></em></button>
+      <button class="nav-item" data-tab="research"><i>◈</i><span>Исследование</span></button>
+      <button class="nav-item" data-tab="assistant"><i>✦</i><span>Ассистент</span></button>
+    </nav>
+    <div class="side-foot">
+      <div class="status-line"><span class="dot" id="dot-llm"></span><span id="llm-status">проверка LLM…</span></div>
+      <div class="status-line"><span class="dot green"></span><span>данные на этом компьютере</span></div>
+      <div class="demo-badge" id="demo-badge">демо-данные · замените своим CSV</div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div><h1 id="page-title">Обзор</h1><p id="page-sub">Вся воронка: от фото до поднятия объявлений</p></div>
+      <div class="top-actions">
+        <button class="btn ghost" id="btn-help">Как это работает</button>
+        <button class="btn" id="btn-export-zip">⬇ Экспорт ZIP</button>
+      </div>
+    </header>
+
+    <section class="page active" id="page-overview">
+      <div class="notice">
+        <b>Важно про автоматизацию.</b> У WB Ресейл нет публичного API для частных объявлений: Seller API — это другой контур (карточки селлеров, новые товары). Поэтому автоматизируем <b>подготовку</b> (фото → описание → размеры → цена → экспорт), а публикацию ускоряем расширением браузера и планировщиком редактирований.
+      </div>
+      <div class="kpis" id="kpis"></div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-head"><h2>Воронка публикации</h2><span class="muted">обновляется в реальном времени</span></div>
+          <div id="funnel"></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h2>График поднятий</h2><span class="muted">ближайшие 14 дней</span></div>
+          <div class="chart" id="calendar-chart"></div>
+          <div class="card-foot" id="bump-summary"></div>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-head"><h2>План на сегодня</h2></div>
+          <ol class="todo" id="todo"></ol>
+        </div>
+        <div class="card">
+          <div class="card-head"><h2>Настройки поднятий</h2><button class="mini" id="btn-save-settings">Сохранить</button></div>
+          <div class="settings-grid" id="settings"></div>
+          <p class="hint">Редактирование объявления в Ресейле продлевает срок публикации (2 месяца) с момента правки. Снижение цены пушует тех, кто просил скидку. Не делайте больше 15–20 правок в день — это выглядит как спам.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="page" id="page-listings">
+      <div class="toolbar">
+        <input id="search" class="input" placeholder="Поиск: артикул, бренд, цвет, размер…">
+        <select id="filter-status" class="input"><option value="">Все статусы</option><option value="draft">Черновики</option><option value="ready">Готовы</option><option value="published">Опубликованы</option><option value="sold">Проданы</option><option value="archived">Архив</option></select>
+        <button class="btn ghost" id="btn-refresh">Обновить</button>
+        <a class="btn ghost" href="/api/export/csv" download>⬇ CSV</a>
+      </div>
+      <div class="card">
+        <div class="table-wrap"><table class="table" id="listings-table">
+          <thead><tr><th>Фото</th><th>Артикул / название</th><th>Размер</th><th>Состояние</th><th>Цена</th><th>Фото</th><th>Статус</th><th></th></tr></thead>
+          <tbody id="listings-body"></tbody>
+        </table></div>
+        <div class="card-foot" id="listings-foot"></div>
+      </div>
+    </section>
+
+    <section class="page" id="page-content">
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-head"><h2>1. Импорт вещей (CSV)</h2><span class="muted">одна строка = одно платье</span></div>
+          <p class="hint">Колонки: <code>vendor_code,brand,type,color,material,size,condition,defects,chest,waist,hips,length,sleeve,price,season,style</code>. Русские названия тоже принимаются. Артикул = имя папки с фото.</p>
+          <div class="row"><input type="file" id="csv-file" accept=".csv,text/csv" class="input"><button class="btn ghost" id="btn-example">Пример CSV</button></div>
+          <textarea id="csv-text" class="input mono" rows="7" placeholder="vendor_code;brand;color;size;condition;price&#10;DR-001;ZARA;чёрный;44;отличное;1900"></textarea>
+          <div class="row wrap">
+            <label class="check"><input type="checkbox" id="opt-llm" checked> использовать LLM, если настроен</label>
+            <label class="check"><input type="checkbox" id="opt-vision"> распознавать вещь по фото (LLM_VISION=1)</label>
+            <label class="check"><input type="checkbox" id="opt-photos" checked> обработать фото из data/incoming</label>
+          </div>
+          <div class="row wrap"><button class="btn" id="btn-import">Импортировать и собрать карточки</button>
+          <button class="btn ghost" id="btn-clear-demo">Удалить демо-данные</button></div>
+          <div id="import-result" class="result"></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h2>2. Фотографии</h2></div>
+          <p class="hint">Структура: <code>data/incoming/DR-001/*.jpg</code> → после обработки <code>data/out/DR-001/01.jpg</code> (1200×1600, 3:4, ≤9.5 МБ, без EXIF/GPS). Первое фото — обложка, до 30 кадров. Если исходники больше 10 МБ — используйте блок «⚡ Фото больше 10 МБ» ниже или скрипт для Mac.</p>
+          <div class="row"><input class="input" id="photo-vendor" placeholder="Артикул, напр. DR-001"><input type="file" id="photo-files" multiple accept="image/*" class="input"></div>
+          <button class="btn ghost" id="btn-upload-photos">Загрузить и обработать фото</button>
+          <button class="btn ghost" id="btn-reprocess">Переобработать все папки</button>
+          <div id="photo-result" class="result"></div>
+          <div class="divider"></div>
+          <h3>3. Выгрузка</h3>
+          <div class="row wrap">
+            <a class="btn ghost" href="/api/export/json" target="_blank">JSON для расширения</a>
+            <a class="btn ghost" href="/api/export/csv" download>CSV для Excel</a>
+            <a class="btn ghost" href="/api/export/zip" download>ZIP: всё + фото</a>
+          </div>
+          <p class="hint">В ZIP лежат <code>listings.json</code>, <code>listings.csv</code> и папка <code>photos/</code> — её можно перетащить в форму объявления. Расширение для Chrome лежит в <code>extension/</code>.</p>
+        </div>
+      </div>
+      <div class="card" id="big-photos-card">
+        <div class="card-head"><h2>⚡ Фото больше 10 МБ — сжать прямо здесь</h2><span class="muted">лимит WB: 10 МБ · минимум 700×900 · JPG/PNG/WEBP · до 30 фото</span></div>
+        <p class="hint">Выберите папку <code>/Users/zlata/Desktop/Одежда</code>. Браузер сортирует файлы по имени и объединяет по 2: первые два файла = платье DR-0001, следующие два = DR-0002 и т.д. Сначала проверьте, что имена действительно идут парами. Сжатие происходит на вашем Mac; затем готовые JPEG отправляются на сервер приложения (исходники не меняются). Если не хотите передавать фото в приложение — используйте скрипт для Mac ниже.</p>
+        <div class="row wrap">
+          <input type="file" id="big-folder" webkitdirectory directory multiple class="input" style="flex:1;min-width:230px">
+          <select id="big-target" class="input"><option value="1200x1600">1200×1600 (рекомендую)</option><option value="900x1200">900×1200 (легче)</option></select>
+          <label class="check">Фото на вещь <input type="number" id="big-per-item" value="2" min="1" max="30" class="input" style="width:70px"></label>
+          <label class="check">Лимит <input type="number" id="big-max-mb" value="9.5" min="0.5" max="10" step="0.5" class="input" style="width:85px"> МБ</label>
+          <label class="check">Префикс <input id="big-prefix" value="DR" class="input" style="width:80px"></label>
+          <label class="check"><input type="checkbox" id="big-upload" checked> сразу в базу</label>
+          <button class="btn" id="btn-big-compress">Сжать и загрузить</button>
+        </div>
+        <div class="row wrap">
+          <a class="btn ghost" href="/tools/prepare_photos.py" download>⬇ Скрипт для Mac/Windows</a>
+          <a class="btn ghost" href="/prepare_photos.command" download>⬇ prepare_photos.command (двойной клик на Mac)</a>
+          <button class="btn ghost" id="btn-big-report">⬇ Отчёт сжатия CSV</button>
+          <button class="btn ghost" id="btn-big-inventory">⬇ Список платьев CSV</button>
+        </div>
+        <div class="progress"><div id="big-bar"></div></div>
+        <pre class="pre" id="big-log">Лог обработки появится здесь. Сначала выберите папку: увидите, как файлы разобьются по 2, затем нажмите «Сжать и загрузить».</pre>
+        <div id="big-result" class="result"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2>Как устроен конвейер</h2></div>
+        <div class="steps" id="steps"></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h2>AI-описания</h2><span class="muted" id="llm-state"></span></div>
+        <p class="hint">Без ключа работает офлайн-генератор: 5 вариантов формулировок, честное состояние, замеры, ключевые слова. Чтобы включить LLM, задайте переменные окружения перед запуском:<br><code>LLM_API_URL</code> (OpenAI-совместимый endpoint), <code>LLM_API_KEY</code>, <code>LLM_MODEL</code>, <code>LLM_VISION=1</code> — для распознавания по фото.</p>
+        <div class="row"><input class="input" id="preview-brand" placeholder="Бренд" value="ZARA"><input class="input" id="preview-color" placeholder="Цвет" value="чёрный"><input class="input" id="preview-size" placeholder="Размер" value="44"><button class="btn ghost" id="btn-preview">Пример описания</button></div>
+        <pre class="pre" id="preview-out">Нажмите «Пример описания» — покажу, какой текст получится.</pre>
+      </div>
+    </section>
+
+    <section class="page" id="page-bumps">
+      <div class="notice small">Автоматической кнопки «Поднять» в Ресейле нет. Редактирование объявления обновляет срок публикации, а снижение цены рассылает push интересовавшимся. Здесь — очередь таких обновлений вручную или через Playwright-сценарий.</div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-head"><h2>Создать очередь</h2></div>
+          <div class="row wrap"><input class="input" type="date" id="bump-date"><input class="input" type="number" id="bump-per-day" min="1" max="100" placeholder="штук в день"></div>
+          <button class="btn" id="btn-gen-bumps">Сгенерировать задачи на день</button>
+          <button class="btn ghost" id="btn-clear-bumps">Очистить очередь</button>
+          <div id="bump-gen-result" class="result"></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h2>Загрузка по дням</h2></div>
+          <div class="chart tall" id="bump-calendar"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h2>Очередь <span id="queue-count" class="pill"></span></h2><select class="input" id="bump-filter"><option value="pending">Ожидают</option><option value="done">Выполненные</option><option value="">Все</option></select></div>
+        <div id="bump-queue" class="queue"></div>
+      </div>
+    </section>
+
+    <section class="page" id="page-research">
+      <div class="notice small">Ресерч рынка: загрузите CSV с объявлениями конкурентов (название + цена; можно выгрузить из сервиса аналитики или собрать вручную). Парсинг WB внутри проекта не ведётся.</div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-head"><h2>Загрузить данные рынка</h2></div>
+          <div class="row"><input type="file" id="market-file" accept=".csv,text/csv" class="input"></div>
+          <textarea class="input mono" rows="6" id="market-text" placeholder="title;price;condition&#10;Платье ZARA миди б/у;1900;отличное&#10;Платье MANGO 44;1500;хорошее"></textarea>
+          <button class="btn" id="btn-market-import">Загрузить и посчитать</button>
+          <button class="btn ghost" id="btn-market-demo">Пример данных</button>
+          <div id="market-result" class="result"></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h2>Вилка цен</h2><input class="input" id="market-query" placeholder="фильтр: например zara"></div>
+          <div id="market-stats" class="market-stats"></div>
+          <div class="chart" id="market-chart"></div>
+          <button class="btn ghost" id="btn-reprice">Пересчитать мои цены по рынку</button>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="card"><div class="card-head"><h2>Частые слова в заголовках</h2></div><div id="market-words" class="chips"></div></div>
+        <div class="card"><div class="card-head"><h2>Самые дешёвые аналоги</h2></div><div id="market-sample" class="samples"></div></div>
+      </div>
+    </section>
+
+    <section class="page" id="page-assistant">
+      <div class="grid-assistant">
+        <div class="card chat-card">
+          <div class="card-head">
+            <h2>Ассистент</h2>
+            <div class="row">
+              <select class="input" id="chat-mode"><option value="seller">Помощник продавца</option><option value="buyer">Ответ покупателю</option></select>
+              <select class="input" id="chat-listing"><option value="">Вещь не выбрана</option></select>
+            </div>
+          </div>
+          <div class="chat" id="chat"></div>
+          <div class="chips" id="chat-prompts"></div>
+          <div class="row chat-input"><input class="input" id="chat-text" placeholder="Спросите: как поднять карточку? / напиши ответ про замеры"><button class="btn" id="btn-chat">Отправить ↵</button></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h2>Быстрый доступ</h2></div>
+          <p class="hint">Ассистент знает вашу базу: сколько вещей, что пора обновлять, медиану рынка, замеры конкретного платья.</p>
+          <div class="quick" id="quick-actions"></div>
+          <div class="divider"></div>
+          <h3>Черновик ответа покупателю</h3>
+          <p class="hint">Выберите вещь слева, режим «Ответ покупателю» и вставьте вопрос из чата WB — получите вежливый ответ по фактам карточки, без выдуманных замеров.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="drawer" id="drawer"><div class="drawer-inner" id="drawer-inner"></div></div>
+<div class="modal" id="modal"><div class="modal-card" id="modal-card"></div></div>
+<div class="toast" id="toast"></div>
+
+<script src="/app.js"></script>
+</body>
+</html>

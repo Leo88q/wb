@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="ru">
+<head><meta charset="utf-8"><style>
+  body{font:13px system-ui,sans-serif;width:380px;margin:0;color:#24202f;background:#f7f5fb}
+  header{background:linear-gradient(135deg,#7b2ff7,#a24bff);color:#fff;padding:14px 16px}
+  header b{font-size:14px} header span{display:block;font-size:11px;opacity:.85;margin-top:3px}
+  .wrap{padding:12px}
+  .row{display:flex;gap:6px;margin-bottom:10px}
+  input,select,button{font:inherit;border-radius:8px;border:1px solid #e2dcf0;padding:7px 9px;background:#fff}
+  input{flex:1;min-width:0} button{cursor:pointer;background:#7b2ff7;color:#fff;border:0;font-weight:600}
+  button.ghost{background:#fff;color:#6d33d6;border:1px solid #d9c9ff;font-weight:500}
+  #status{font-size:11px;color:#7a728d;margin-bottom:8px}
+  .item{background:#fff;border:1px solid #e9e3f5;border-radius:10px;padding:10px;margin-bottom:8px}
+  .item b{display:block;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .item small{color:#8a82a0;font-size:10.5px}
+  .acts{display:flex;gap:5px;margin-top:8px;flex-wrap:wrap}
+  .acts button{font-size:11px;padding:5px 8px}
+  .hint{font-size:10.5px;color:#8a82a0;line-height:1.5;margin-top:12px}
+  #list{max-height:360px;overflow:auto}
+</style></head>
+<body>
+<header><b>WB Ресейл Ассистент</b><span>Заполняю форму за секунды · данные с вашего компьютера</span></header>
+<div class="wrap">
+  <div class="row"><input id="api" placeholder="http://127.0.0.1:8000"><button id="save">OK</button></div>
+  <div class="row"><select id="status" style="flex:1"><option value="ready">Готовые к публикации</option><option value="published">Опубликованные</option><option value="draft">Черновики</option></select><button class="ghost" id="reload">Обновить</button></div>
+  <div id="status-line">Загружаю карточки…</div>
+  <div id="list"></div>
+  <p class="hint">Откройте форму создания объявления в разделе «Ресейл» на wildberries.ru, затем нажмите «Заполнить форму». Фото нельзя подставить программно — перетащите файлы из <code>data/out/&lt;артикул&gt;/</code> (кнопка «Фото» скачает их в Загрузки). Публикацию подтверждаете вы сами.</p>
+</div>
+<script src="popup.js"></script>
+</body></html>
